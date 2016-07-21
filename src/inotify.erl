@@ -7,11 +7,14 @@ check() ->
 		Bin -> Bin
 	end.
 
+%% inotifywait ignores STDPIPE on STDIN
 start_port(Paths) ->
-	Bin = check(),
-	Args = ["-m", "-q", "-e", "close_write", "-e", "moved_to", "-e", "create", "-e", "delete", "-r", Paths],
+	_ = check(),
+	Args = [
+		"-c", "inotifywait $0 $@ & PID=$!; read a; kill $PID",
+		"-m", "-q", "-e", "close_write", "-e", "moved_to", "-e", "create", "-e", "delete", "-r", Paths],
 	erlang:open_port(
-		{spawn_executable, Bin},
+		{spawn_executable, os:find_executable("sh")},
 		[stream, exit_status, {line, 16384}, {args, Args}]
 	).
 

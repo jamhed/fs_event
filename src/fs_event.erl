@@ -12,8 +12,8 @@ delete_handler(Pid, Handler, Args) -> gen_server:call(Pid, {delete_handler, Hand
 
 stop(Pid) when is_pid(Pid) -> gen_server:call(Pid, {stop});
 stop(#state{port=Port, event_manager=EventManager}) ->
-	erlang:port_close(Port),
-	gen_event:stop(EventManager).
+	gen_event:stop(EventManager),
+	erlang:port_close(Port).
 
 %% API impl
 
@@ -37,9 +37,10 @@ handle_call({delete_handler, Handler, Args}, _From, S=#state{event_manager=Event
 	gen_event:delete_handler(EventManager, Handler, Args),
 	{reply, ok, S};
 handle_call({stop}, _From, S=#state{}) ->
-	stop(S),
-	{stop, stop, ok, #state{}};
+	{stop, normal, ok, S};
 handle_call(_Request, _From, S=#state{}) -> {reply, ok, S}.
 
-terminate(_Reason, S) -> stop(S), ok.
+terminate(_Reason, S) ->
+	stop(S),
+	ok.
 code_change(_OldVsn, S=#state{}, _Extra) -> {ok, S}.
