@@ -4,7 +4,7 @@
 
 -export([start_link/1, add_handler/3, delete_handler/3]).
 
--record(state, {event_manager}).
+-record(state, {event_manager, port}).
 
 start_link(Path) -> gen_server:start_link(?MODULE, [Path], []).
 add_handler(Pid, Handler, Args) -> gen_server:call(Pid, {add_handler, Handler, Args}).
@@ -14,8 +14,8 @@ delete_handler(Pid, Handler, Args) -> gen_server:call(Pid, {delete_handler, Hand
 
 init([Path]) ->
 	{ok, EventManager} = gen_event:start_link(),
-	inotify:start_port(Path),
-	{ok, #state{event_manager=EventManager}}.
+	Port = inotify:start_port(Path),
+	{ok, #state{event_manager=EventManager, port=Port}}.
 handle_cast(_Msg, S=#state{}) -> {noreply, S}.
 
 handle_info({_Port, {data, {eol, Line}}}, S=#state{event_manager=EventManager}) ->
@@ -33,5 +33,7 @@ handle_call({delete_handler, Handler, Args}, _From, S=#state{event_manager=Event
 	{reply, ok, S};
 handle_call(_Request, _From, S=#state{}) -> {reply, ok, S}.
 
-terminate(_Reason, _S) -> ok.
+terminate(_Reason, _S) ->
+	io:format("TERMINATE:~p", [_Reason]),
+	ok.
 code_change(_OldVsn, S=#state{}, _Extra) -> {ok, S}.

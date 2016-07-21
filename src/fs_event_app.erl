@@ -10,7 +10,7 @@
 %% ===================================================================
 
 start(_StartType, _StartArgs) ->
-    fs_event_sup:start_link().
+	fs_event_sup:start_link().
 
 stop(_State) ->
-    ok.
+	ok.
