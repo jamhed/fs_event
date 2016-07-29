@@ -3,7 +3,7 @@
 -include_lib("kernel/include/file.hrl").
 -behaviour(gen_server).
 
--export([start/1, parse/1, check/0, make_tree/1, rescan/1]).
+-export([start/1, stop/1, parse/1, check/0]).
 
 -record(state, {
 	path,
@@ -13,7 +13,11 @@
 }).
 
 start(Path) ->
-	gen_server:start_link(?MODULE, [self(), Path, 10000], []).
+	{ok, Pid} = gen_server:start_link(?MODULE, [self(), Path, 10000], []),
+	Pid.
+
+stop(Pid) ->
+	gen_server:stop(Pid).
 
 rescan(Pid) ->
 	gen_server:cast(Pid, rescan).
@@ -32,7 +36,6 @@ handle_cast(rescan, S=#state{caller=Pid, path=Path, tree=Tree}) ->
 handle_cast(_Msg, S=#state{}) -> {noreply, S}.
 
 handle_info(timer, S=#state{rescan_period=Time}) ->
-	io:format("timer~n", []),
 	rescan(self()),
 	erlang:send_after(Time, self(), timer),
 	{noreply, S};
@@ -43,7 +46,7 @@ code_change(_OldVsn, S=#state{}, _Extra) -> {ok, S}.
 
 %% impl
 
-check() -> ok.
+check() -> true.
 
 parse(Event) -> Event.
 
@@ -55,7 +58,7 @@ rescan(Pid, Tree, [{File, #file_info{mtime=MTime} = Info} | FilesInfo]) ->
 			gb_trees:enter(File, Info, Tree);
 		{value, _} -> Tree;
 		_ ->
-			notify(Pid, create, File),
+			notify(Pid, rename, File), % compatibility with inotify?
 			gb_trees:enter(File, Info, Tree)
 	end,
 	rescan(Pid, NewTree, FilesInfo).

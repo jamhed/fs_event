@@ -4,29 +4,29 @@
 
 -export([start_link/1, add_handler/3, delete_handler/3, stop/1]).
 
--record(state, {event_manager, port}).
-
--define(HANDLER, naive).
+-record(state, {event_manager, port, handler}).
 
 start_link(Path) -> gen_server:start_link(?MODULE, [Path], []).
 add_handler(Pid, Handler, Args) -> gen_server:call(Pid, {add_handler, Handler, Args}).
 delete_handler(Pid, Handler, Args) -> gen_server:call(Pid, {delete_handler, Handler, Args}).
 
 stop(Pid) when is_pid(Pid) -> gen_server:call(Pid, {stop});
-stop(#state{port=Port, event_manager=EventManager}) ->
+stop(#state{port=Port, event_manager=EventManager, handler=HandlerModule}) ->
 	gen_event:stop(EventManager),
-	erlang:port_close(Port).
+	HandlerModule:stop(Port).
 
 %% API impl
 
 init([Path]) ->
 	{ok, EventManager} = gen_event:start_link(),
-	Port = ?HANDLER:start(Path),
-	{ok, #state{event_manager=EventManager, port=Port}}.
+	HandlerModule = choose_handler([inotify, naive]),
+	error_logger:info_msg("handler: ~p~n", [HandlerModule]),
+	Handler = HandlerModule:start(Path),
+	{ok, #state{event_manager=EventManager, port=Handler, handler=HandlerModule}}.
 handle_cast(_Msg, S=#state{}) -> {noreply, S}.
 
-handle_info({_Port, {data, {eol, Line}}}, S=#state{event_manager=EventManager}) ->
-	{File, Events} = ?HANDLER:parse(Line),
+handle_info({_Port, {data, {eol, Line}}}, S=#state{event_manager=EventManager, handler=HandlerModule}) ->
+	{File, Events} = HandlerModule:parse(Line),
 	_ = [ gen_event:notify(EventManager, {Event, File}) || Event <- Events ],
 	{noreply, S};
 handle_info(_Info, S=#state{}) ->
@@ -46,3 +46,10 @@ terminate(_Reason, S) ->
 	stop(S),
 	ok.
 code_change(_OldVsn, S=#state{}, _Extra) -> {ok, S}.
+
+choose_handler([]) -> erlang:error(no_fs_module_available);
+choose_handler([Module|Modules]) ->
+	case Module:check() of
+		true -> Module;
+		false -> choose_handler(Modules)
+	end.

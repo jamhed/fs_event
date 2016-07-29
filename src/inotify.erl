@@ -1,10 +1,10 @@
 -module(inotify).
--export([start/1, parse/1, check/0]).
+-export([start/1, stop/1, parse/1, check/0]).
 
 check() ->
 	case os:find_executable("inotifywait") of
-		false -> erlang:error(no_inotifywait_binary_in_search_path);
-		Bin -> Bin
+		false -> false;
+		Bin -> true
 	end.
 
 %% inotifywait ignores STDPIPE on STDIN
@@ -17,6 +17,9 @@ start(Paths) ->
 		{spawn_executable, os:find_executable("sh")},
 		[stream, exit_status, {line, 16384}, {args, Args}]
 	).
+
+stop(Port) ->
+	erlang:port_close(Port).
 
 parse(Line) ->
 	{match, [Dir, Flags1, DirEntry]} = re:run(Line, re(), [{capture, all_but_first, list}]),
