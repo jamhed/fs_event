@@ -6,6 +6,8 @@
 
 -record(state, {event_manager, port}).
 
+-define(HANDLER, naive).
+
 start_link(Path) -> gen_server:start_link(?MODULE, [Path], []).
 add_handler(Pid, Handler, Args) -> gen_server:call(Pid, {add_handler, Handler, Args}).
 delete_handler(Pid, Handler, Args) -> gen_server:call(Pid, {delete_handler, Handler, Args}).
@@ -19,12 +21,12 @@ stop(#state{port=Port, event_manager=EventManager}) ->
 
 init([Path]) ->
 	{ok, EventManager} = gen_event:start_link(),
-	Port = inotify:start_port(Path),
+	Port = ?HANDLER:start(Path),
 	{ok, #state{event_manager=EventManager, port=Port}}.
 handle_cast(_Msg, S=#state{}) -> {noreply, S}.
 
 handle_info({_Port, {data, {eol, Line}}}, S=#state{event_manager=EventManager}) ->
-	{File, Events} = inotify:parse(Line),
+	{File, Events} = ?HANDLER:parse(Line),
 	_ = [ gen_event:notify(EventManager, {Event, File}) || Event <- Events ],
 	{noreply, S};
 handle_info(_Info, S=#state{}) ->

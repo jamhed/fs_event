@@ -1,5 +1,5 @@
 -module(inotify).
--export([start_port/1, parse/1, check/0]).
+-export([start/1, parse/1, check/0]).
 
 check() ->
 	case os:find_executable("inotifywait") of
@@ -8,7 +8,7 @@ check() ->
 	end.
 
 %% inotifywait ignores STDPIPE on STDIN
-start_port(Paths) ->
+start(Paths) ->
 	_ = check(),
 	Args = [
 		"-c", "inotifywait $0 $@ & PID=$!; read a; kill $PID",
