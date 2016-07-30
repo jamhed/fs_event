@@ -1,9 +1,8 @@
 -module(fs_event).
 -behaviour(gen_server).
+-include_lib("fs_event/include/logger.hrl").
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
-
 -export([start_link/1, add_handler/3, delete_handler/3, stop/1]).
-
 -record(state, {event_manager, port, handler}).
 
 start_link(Path) -> gen_server:start_link(?MODULE, [Path], []).
@@ -20,7 +19,7 @@ stop(#state{port=Port, event_manager=EventManager, handler=HandlerModule}) ->
 init([Path]) ->
 	{ok, EventManager} = gen_event:start_link(),
 	HandlerModule = choose_handler([inotify, naive]),
-	error_logger:info_msg("handler: ~p~n", [HandlerModule]),
+	?INFO("Selected backend: ~p", [HandlerModule]),
 	Handler = HandlerModule:start(Path),
 	{ok, #state{event_manager=EventManager, port=Handler, handler=HandlerModule}}.
 handle_cast(_Msg, S=#state{}) -> {noreply, S}.
@@ -47,7 +46,8 @@ terminate(_Reason, S) ->
 	ok.
 code_change(_OldVsn, S=#state{}, _Extra) -> {ok, S}.
 
-choose_handler([]) -> erlang:error(no_fs_module_available);
+choose_handler([]) ->
+	erlang:error(no_fs_module_available);
 choose_handler([Module|Modules]) ->
 	case Module:check() of
 		true -> Module;
