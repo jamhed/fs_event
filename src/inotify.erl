@@ -4,7 +4,7 @@
 check() ->
 	case os:find_executable("inotifywait") of
 		false -> false;
-		Bin -> true
+		_Bin -> true
 	end.
 
 %% inotifywait ignores STDPIPE on STDIN
