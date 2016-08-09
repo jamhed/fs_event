@@ -18,7 +18,7 @@ stop(#state{port=Port, event_manager=EventManager, handler=HandlerModule}) ->
 
 init([Path]) ->
 	{ok, EventManager} = gen_event:start_link(),
-	HandlerModule = choose_handler([inotify, naive]),
+	HandlerModule = choose_handler(fs_event_cfg:force_backend(), [inotify, naive]),
 	?INFO("Selected backend: ~p", [HandlerModule]),
 	Handler = HandlerModule:start(Path),
 	{ok, #state{event_manager=EventManager, port=Handler, handler=HandlerModule}}.
@@ -46,10 +46,11 @@ terminate(_Reason, S) ->
 	ok.
 code_change(_OldVsn, S=#state{}, _Extra) -> {ok, S}.
 
-choose_handler([]) ->
+choose_handler(false, []) ->
 	erlang:error(no_fs_module_available);
-choose_handler([Module|Modules]) ->
+choose_handler(false, [Module|Modules]) ->
 	case Module:check() of
 		true -> Module;
-		false -> choose_handler(Modules)
-	end.
+		false -> choose_handler(false, Modules)
+	end;
+choose_handler(Handler, _) -> Handler.

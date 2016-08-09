@@ -13,7 +13,7 @@
 }).
 
 start(Path) ->
-	{ok, Pid} = gen_server:start_link(?MODULE, [self(), Path, 10000], []),
+	{ok, Pid} = gen_server:start_link(?MODULE, [self(), Path, fs_event_cfg:rescan_period()], []),
 	Pid.
 
 stop(Pid) ->
