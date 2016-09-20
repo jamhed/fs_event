@@ -1,12 +1,15 @@
-{application, fs_event,
- [
-  {description, ""},
-  {vsn, "1"},
-  {registered, []},
-  {applications, [
-                  kernel,
-                  stdlib
-                 ]},
-  {mod, { fs_event_app, []}},
-  {env, []}
- ]}.
+{application,
+	fs_event, [
+		{description, "File system events"},
+		{vsn, "1.0.0"},
+		{registered, []},
+		{applications, [
+			kernel,
+			stdlib
+		]},
+		{mod, { fs_event_app, []}},
+		{env, []},
+		{maintainers, ["Roman Galeev"]},
+		{licenses, ["GNU GPL"]},
+		{links, [{"Github", "https://github.com/jamhed/fs_event"}]}
+]}.
