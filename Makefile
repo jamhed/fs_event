@@ -1,8 +1,6 @@
 devel:
-	rm -rf _rel
-	rebar get-deps
-	rebar compile
-	relx -d
+	rm -rf _build
+	rebar3 release
 
 console: devel
-	_rel/fs_event/bin/fs_event console
+	_build/default/rel/fs_event/bin/fs_event console
